@@ -6,6 +6,9 @@ Audio feature distributions
 Bpm distribution
 ![bpm_distribution](figures/bpm_distribution.png)
 
+Correlation of features with streams
+![correlation_of_features_with_streams](figures/correlation_of_features_with_streams.png)
+
 Correlation of streams with playlist features
 ![correlation_of_streams_with_playlist_features](figures/correlation_of_streams_with_playlist_features.png)
 
