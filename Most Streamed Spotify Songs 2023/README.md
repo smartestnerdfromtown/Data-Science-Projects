@@ -20,3 +20,6 @@ Mean streams by artist count
 
 Number of tracks in charts by platform
 ![number_of_tracks_in_charts_by_platform](figures/number_of_tracks_in_charts_by_platform.png)
+
+Top10 streams correlations
+![top10_streams_correlations](figures/top10_streams_correlations.png)
