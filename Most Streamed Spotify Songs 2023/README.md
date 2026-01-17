@@ -15,6 +15,15 @@ Correlation of streams with playlist features
 Energy vs danceability
 ![energy_vs_danceability](figures/energy_vs_danceability.png)
 
+In apple playlists distribution and vs streams
+![in_apple_playlists_distribution_and_vs_streams](figures/in_apple_playlists_distribution_and_vs_streams.png)
+
+In deezer playlists distribution and vs streams
+![in_deezer_playlists_distribution_and_vs_streams](figures/in_deezer_playlists_distribution_and_vs_streams.png)
+
+In spotify playlists distribution and vs streams
+![in_spotify_playlists_distribution_and_vs_streams](figures/in_spotify_playlists_distribution_and_vs_streams.png)
+
 Mean streams by artist count
 ![mean_streams_by_artist_count](figures/mean_streams_by_artist_count.png)
 
