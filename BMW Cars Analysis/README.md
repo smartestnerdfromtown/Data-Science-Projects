@@ -30,6 +30,9 @@ Mpg distribution
 Mpg vs price
 ![mpg_vs_price](figures/mpg_vs_price.png)
 
+Numerical features correlation lower triangle
+![numerical_features_correlation_lower_triangle](figures/numerical_features_correlation_lower_triangle.png)
+
 Price distribution
 ![price_distribution](figures/price_distribution.png)
 
@@ -38,3 +41,6 @@ Price distribution by fuel type
 
 Price distribution by transmission type
 ![price_distribution_by_transmission_type](figures/price_distribution_by_transmission_type.png)
+
+Top price influencers
+![top_price_influencers](figures/top_price_influencers.png)
