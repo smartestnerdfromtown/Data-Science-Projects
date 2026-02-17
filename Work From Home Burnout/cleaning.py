@@ -56,7 +56,7 @@ def define_zscore(
 
     df_copy["z_score"] = (df_copy[column_name] - mean) / std
 
-    outliers = df_copy[np.abs(df["z_score"]) > 3]
+    outliers = df_copy[np.abs(df_copy["z_score"]) > 3]
 
     return outliers
 
@@ -69,10 +69,10 @@ def detect_outliers(
     match method:
         case "z_score":
             outliers = define_zscore(df=df, column_name=column_name)
-            return f"There are {outliers.count()} outliers in {column_name} column"
+            return f"There are {len(outliers)} outliers in {column_name} column"
         case "iqr":
             outliers = define_iqr(df=df, column_name=column_name)
-            return f"There are {outliers.count()} outliers in {column_name} column"
+            return f"There are {len(outliers)} outliers in {column_name} column"
 
 if __name__ == "__main__":
     df = pd.read_csv(
@@ -103,6 +103,15 @@ if __name__ == "__main__":
     print("task_completion_rate: ", 
           validate_ranges(df=df_copy, column_name="task_completion_rate", min=0, max=100))
     
+    screen_time_hours = detect_outliers(
+        df=df_copy, column_name="screen_time_hours", method="z_score"
+    )
+    task_completion_rate = detect_outliers(
+        df=df_copy, column_name="task_completion_rate", method="iqr"
+    )
+
+    print(screen_time_hours)
+    print(task_completion_rate)
 
     df_copy.to_csv(
         path_or_buf="burnout_cleaned.csv",
