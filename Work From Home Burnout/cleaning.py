@@ -15,6 +15,16 @@ def standradize_values(
 
     return df_copy
 
+def validate_ranges(
+    df: pd.DataFrame,
+    column_name: str,
+    min: float,
+    max: float
+    ) -> bool:
+
+    if df[column_name].min() == min and df[column_name].max() == max:
+        return True
+    return (df[column_name].min(), df[column_name].max())
 
 
 if __name__ == "__main__":
@@ -40,6 +50,14 @@ if __name__ == "__main__":
     )
 
     print(df_copy.info())
+
+    print("work_hours: ", 
+          validate_ranges(df=df_copy, column_name="work_hours", min=0, max=24))
+    print("sleep_hours: ", 
+          validate_ranges(df=df_copy, column_name="sleep_hours", min=0, max=24))
+    print("task_completion_rate: ", 
+          validate_ranges(df=df_copy, column_name="task_completion_rate", min=0, max=100))
+    
 
     df_copy.to_csv(
         path_or_buf="burnout_cleaned.csv",
