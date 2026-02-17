@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from typing import Dict
+from typing import Dict, List
 
 
 def standradize_values(
@@ -26,6 +26,53 @@ def validate_ranges(
         return True
     return (df[column_name].min(), df[column_name].max())
 
+def define_iqr(
+    df: pd.DataFrame,
+    column_name: str    
+    ) -> pd.DataFrame:
+
+    Q1 = df[column_name].quantile(0.25)
+    Q3 = df[column_name].quantile(0.75)
+    IQR = Q3 - Q1
+
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+
+    outliers = df[
+        (df[column_name] < lower_bound) | (df[column_name] > upper_bound)
+    ]
+
+    return outliers
+
+def define_zscore(
+    df: pd.DataFrame,
+    column_name: str    
+    ) -> pd.DataFrame:
+    
+    df_copy = df.copy(deep=True)
+
+    mean = np.mean(df[column_name])
+    std = np.std(df[column_name])
+
+    df_copy["z_score"] = (df_copy[column_name] - mean) / std
+
+    outliers = df_copy[np.abs(df["z_score"]) > 3]
+
+    return outliers
+
+def detect_outliers(
+    df: pd.DataFrame,
+    column_name: str,
+    method: str
+    ) -> int: 
+
+    match method:
+        case "z_score":
+            outliers = define_zscore(df=df, column_name=column_name)
+            return f"There are {outliers.count()} outliers in {column_name} column"
+        case "iqr":
+            outliers = define_iqr(df=df, column_name=column_name)
+            return f"There are {outliers.count()} outliers in {column_name} column"
 
 if __name__ == "__main__":
     df = pd.read_csv(
@@ -48,8 +95,6 @@ if __name__ == "__main__":
     df_copy = standradize_values(
         df=df_copy, column_name="burnout_risk", mapper=burnout_mapper
     )
-
-    print(df_copy.info())
 
     print("work_hours: ", 
           validate_ranges(df=df_copy, column_name="work_hours", min=0, max=24))
