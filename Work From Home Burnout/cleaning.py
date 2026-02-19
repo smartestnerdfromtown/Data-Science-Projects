@@ -1,6 +1,21 @@
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Mapping, Tuple
+from typing import (
+    Dict, 
+    List, 
+    Mapping, 
+    Tuple, 
+    Callable
+)
+
+IQR_MULTIPLIER: float = 1.5
+ZSCORE_THRESHOLD: float = 3.0
+
+def _validate_column(df: pd.DataFrame, column: str) -> pd.Series:
+    if column not in df.columns:
+        raise KeyError(f"Column '{column}' does not exist in DataFrame.")
+    return df[column]
+
 
 def standardize_values(
     df: pd.DataFrame,
@@ -61,53 +76,63 @@ def validate_ranges(
 
     return is_valid, actual_min, actual_max
 
-def define_iqr(
-    df: pd.DataFrame,
-    column_name: str    
-    ) -> pd.DataFrame:
 
-    Q1 = df[column_name].quantile(0.25)
-    Q3 = df[column_name].quantile(0.75)
-    IQR = Q3 - Q1
+def _outliers_iqr(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    series = _validate_column(df, column)
 
-    lower_bound = Q1 - 1.5 * IQR
-    upper_bound = Q3 + 1.5 * IQR
+    q1 = series.quantile(0.25)
+    q3 = series.quantile(0.75)
+    iqr = q3 - q1
 
-    outliers = df[
-        (df[column_name] < lower_bound) | (df[column_name] > upper_bound)
-    ]
+    lower = q1 - IQR_MULTIPLIER * iqr
+    upper = q3 + IQR_MULTIPLIER * iqr
 
-    return outliers
+    return df[(series < lower) | (series > upper)]
 
-def define_zscore(
-    df: pd.DataFrame,
-    column_name: str    
-    ) -> pd.DataFrame:
-    
-    df_copy = df.copy(deep=True)
 
-    mean = np.mean(df[column_name])
-    std = np.std(df[column_name])
+def _outliers_zscore(df: pd.DataFrame, column: str) -> pd.DataFrame:
+    series = _validate_column(df, column)
 
-    df_copy["z_score"] = (df_copy[column_name] - mean) / std
+    std = series.std(ddof=0)
+    if std == 0:
+        return pd.DataFrame(columns=df.columns)
 
-    outliers = df_copy[np.abs(df_copy["z_score"]) > 3]
+    z_scores = (series - series.mean()) / std
+    return df[z_scores.abs() > ZSCORE_THRESHOLD]
 
-    return outliers
+
+OUTLIER_METHODS: Dict[str, Callable[[pd.DataFrame, str], pd.DataFrame]] = {
+    "iqr": _outliers_iqr,
+    "z_score": _outliers_zscore,
+}
+
 
 def detect_outliers(
     df: pd.DataFrame,
-    column_name: str,
-    method: str
-    ) -> int: 
+    column: str,
+    method: str = "iqr",
+) -> pd.DataFrame:
+    """
+    Detect outliers using the specified method.
 
-    match method:
-        case "z_score":
-            outliers = define_zscore(df=df, column_name=column_name)
-            return f"There are {len(outliers)} outliers in {column_name} column"
-        case "iqr":
-            outliers = define_iqr(df=df, column_name=column_name)
-            return f"There are {len(outliers)} outliers in {column_name} column"
+    Parameters
+    ----------
+    method : {"iqr", "z_score"}
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame containing only outlier rows.
+    """
+    if method not in OUTLIER_METHODS:
+        raise ValueError(
+            f"Unsupported method '{method}'. "
+            f"Available methods: {list(OUTLIER_METHODS.keys())}"
+        )
+
+    outliers = OUTLIER_METHODS[method](df, column)
+    return f"There are {len(outliers)} outliers in {column} column"
+
 
 if __name__ == "__main__":
     df = pd.read_csv(
@@ -156,10 +181,10 @@ if __name__ == "__main__":
     ))
     
     screen_time_hours = detect_outliers(
-        df=df_copy, column_name="screen_time_hours", method="z_score"
+        df=df_copy, column="screen_time_hours", method="z_score"
     )
     task_completion_rate = detect_outliers(
-        df=df_copy, column_name="task_completion_rate", method="iqr"
+        df=df_copy, column="task_completion_rate", method="iqr"
     )
 
     print(screen_time_hours)
