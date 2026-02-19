@@ -1,19 +1,41 @@
 import pandas as pd
 import numpy as np
-from typing import Dict, List
+from typing import Dict, List, Mapping
 
+def standardize_values(
+    df: pd.DataFrame,
+    column: str,
+    mapping: Mapping
+) -> pd.DataFrame:
+    """
+    Return a copy of `df` with mapped values in the specified column.
 
-def standradize_values(
-    df: pd.DataFrame, 
-    column_name: str, 
-    mapper: Dict
-    ) -> pd.DataFrame:
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Source dataframe.
+    column : str
+        Column to transform.
+    mapping : Mapping
+        Dictionary-like object used to map old values to new ones.
 
-    df_copy = df.copy(deep=True)
+    Returns
+    -------
+    pd.DataFrame
+        A new dataframe with mapped values.
+    """
+    if column not in df.columns:
+        raise KeyError(f"Column '{column}' does not exist in DataFrame.")
 
-    df_copy[column_name] = df_copy[column_name].map(mapper)
+    result = df.copy()
+    result[column] = (
+        result[column]
+        .map(mapping)
+        .fillna(result[column]) # to preserve original values when not in mapping
+    )
 
-    return df_copy
+    return result
+
 
 def validate_ranges(
     df: pd.DataFrame,
