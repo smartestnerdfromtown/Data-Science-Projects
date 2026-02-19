@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Mapping
+from typing import Dict, List, Mapping, Tuple
 
 def standardize_values(
     df: pd.DataFrame,
@@ -39,14 +39,27 @@ def standardize_values(
 
 def validate_ranges(
     df: pd.DataFrame,
-    column_name: str,
-    min: float,
-    max: float
-    ) -> bool:
+    column: str,
+    expected_min: float,
+    expected_max: float,
+) -> Tuple[bool, float, float]:
+    """
+    Validate whether a column's min and max match expected values.
 
-    if df[column_name].min() == min and df[column_name].max() == max:
-        return True
-    return (df[column_name].min(), df[column_name].max())
+    Returns
+    -------
+    tuple:
+        (is_valid, actual_min, actual_max)
+    """
+    if column not in df.columns:
+        raise KeyError(f"Column '{column}' does not exist in DataFrame.")
+
+    actual_min = df[column].min()
+    actual_max = df[column].max()
+
+    is_valid = (actual_min == expected_min) and (actual_max == expected_max)
+
+    return is_valid, actual_min, actual_max
 
 def define_iqr(
     df: pd.DataFrame,
@@ -105,8 +118,8 @@ if __name__ == "__main__":
         "Weekend": 0,
         "Weekday": 1
     }
-    df_copy = standradize_values(
-        df=df, column_name="day_type", mapper=day_mapper
+    df_copy = standardize_values(
+        df=df, column="day_type", mapping=day_mapper
     )
 
     burnout_mapper = {
@@ -114,16 +127,33 @@ if __name__ == "__main__":
         "Medium": 1,
         "High": 2
     }
-    df_copy = standradize_values(
-        df=df_copy, column_name="burnout_risk", mapper=burnout_mapper
+    df_copy = standardize_values(
+        df=df_copy, column="burnout_risk", mapping=burnout_mapper
     )
 
     print("work_hours: ", 
-          validate_ranges(df=df_copy, column_name="work_hours", min=0, max=24))
+          validate_ranges(
+              df=df_copy, 
+              column="work_hours", 
+              expected_min=0, 
+              expected_max=24
+    ))
+    
     print("sleep_hours: ", 
-          validate_ranges(df=df_copy, column_name="sleep_hours", min=0, max=24))
+          validate_ranges(
+              df=df_copy, 
+              column="sleep_hours", 
+              expected_min=0, 
+              expected_max=24
+    ))
+
     print("task_completion_rate: ", 
-          validate_ranges(df=df_copy, column_name="task_completion_rate", min=0, max=100))
+          validate_ranges(
+              df=df_copy, 
+              column="task_completion_rate", 
+              expected_min=0, 
+              expected_max=100
+    ))
     
     screen_time_hours = detect_outliers(
         df=df_copy, column_name="screen_time_hours", method="z_score"
