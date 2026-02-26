@@ -17,8 +17,8 @@ def split_data(df: pd.DataFrame, test_size: float):
 
     return X_train, X_test, y_train, y_test
 
-def train_polynomial_regression(degree: int, X_train, X_test, y_train):
-    polynomial_regression = PolynomialFeatures(degree=degree)
+def train_polynomial_regression(degree: int, interaction_only: bool, X_train, X_test, y_train):
+    polynomial_regression = PolynomialFeatures(degree=degree, interaction_only=interaction_only)
 
     X_train_poly = polynomial_regression.fit_transform(X_train)
     X_test_poly = polynomial_regression.transform(X_test)
@@ -36,9 +36,28 @@ def evaluate(model, X_test, y_test):
 
     return mse, r2
 
+def grid_search_polynomial_regression(X_train, X_test, y_train, y_test):
+    info = dict()
+    
+    for degree in range(2, 6 + 1):
+        for interaction_only in [True, False]:
+            print(f"Checking for pair: ({degree}, {interaction_only})")
 
+            polynomial_regression, X_test_poly = train_polynomial_regression(
+                degree=degree,
+                interaction_only=interaction_only, 
+                X_train=X_train, 
+                X_test=X_test, 
+                y_train=y_train
+            )
 
+            info[(degree, interaction_only)] = evaluate(
+                model=polynomial_regression, 
+                X_test=X_test_poly,
+                y_test=y_test
+            )
 
+    return info
 
 def main():
     df = pd.read_csv(filepath_or_buffer="student_performance_cleaned.csv")
@@ -47,6 +66,7 @@ def main():
 
     polynomial_regression, X_test_poly = train_polynomial_regression(
         degree=3, 
+        interaction_only=True,
         X_train=X_train, 
         X_test=X_test,
         y_train=y_train
@@ -60,6 +80,9 @@ def main():
 
     print("Coefficients:", polynomial_regression.coef_)
     print("Intercept:", polynomial_regression.intercept_)
+
+    info = grid_search_polynomial_regression(X_train, X_test, y_train, y_test)
+    print(info[(2, True)])
 
 
 
