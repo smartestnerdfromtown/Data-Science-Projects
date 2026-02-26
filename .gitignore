@@ -1,6 +1,7 @@
 # USER
 .DS_Store
 catboost_info/
+qr_codes/
 
 
 # Byte-compiled / optimized / DLL files
