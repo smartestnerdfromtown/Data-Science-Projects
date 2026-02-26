@@ -64,25 +64,26 @@ def main():
 
     X_train, X_test, y_train, y_test = split_data(df=df, test_size=0.2)
 
+    info = grid_search_polynomial_regression(X_train, X_test, y_train, y_test)
+    degree, interaction_only = 2, True
+
     polynomial_regression, X_test_poly = train_polynomial_regression(
-        degree=3, 
-        interaction_only=True,
+        degree=degree, 
+        interaction_only=interaction_only,
         X_train=X_train, 
         X_test=X_test,
         y_train=y_train
     )
 
-    y_pred = polynomial_regression.predict(X_test_poly)
+    print("Coefficients:", polynomial_regression.coef_)
+    print("Intercept:", polynomial_regression.intercept_)
 
     mse, r2 = evaluate(model=polynomial_regression, X_test=X_test_poly, y_test=y_test)
     print("MSE:", mse)
     print("R2:", r2)
 
-    print("Coefficients:", polynomial_regression.coef_)
-    print("Intercept:", polynomial_regression.intercept_)
 
-    info = grid_search_polynomial_regression(X_train, X_test, y_train, y_test)
-    print(info[(2, True)])
+
 
 
 
