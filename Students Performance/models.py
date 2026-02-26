@@ -28,6 +28,13 @@ def train_polynomial_regression(degree: int, X_train, X_test, y_train):
 
     return linear_regression, X_test_poly
 
+def evaluate(model, X_test, y_test):
+    y_pred = model.predict(X_test)
+    
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+
+    return mse, r2
 
 
 
@@ -47,9 +54,7 @@ def main():
 
     y_pred = polynomial_regression.predict(X_test_poly)
 
-    mse = mean_squared_error(y_test, y_pred)
-    r2 = r2_score(y_test, y_pred)
-
+    mse, r2 = evaluate(model=polynomial_regression, X_test=X_test_poly, y_test=y_test)
     print("MSE:", mse)
     print("R2:", r2)
 
