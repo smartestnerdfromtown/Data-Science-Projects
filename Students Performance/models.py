@@ -6,6 +6,7 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor 
 from sklearn.neighbors import KNeighborsRegressor
+from sklearn.svm import SVR
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 
@@ -105,7 +106,6 @@ def random_forest_regression_feature_importance(
 
     return importance_df
 
-
 def train_basic_knn(X_train_scaled, y_train, n_neighbors: int = 5):
     knn = KNeighborsRegressor(
         n_neighbors=n_neighbors,
@@ -141,6 +141,17 @@ def randomized_search_knn(
 
     return random_search.best_estimator_, random_search.best_params_
 
+def train_basic_svr(X_train_scaled, y_train):
+    svr = SVR(
+        kernel="rbf",
+        C=1.0,
+        epsilon=0.1,
+        gamma="scale"
+    )
+
+    svr.fit(X_train_scaled, y_train)
+
+    return svr
 
 
 def main():
@@ -233,4 +244,15 @@ def main():
     print("R2:", r2)
 
 if __name__ == "__main__":
-    main()
+    df = pd.read_csv(filepath_or_buffer="student_performance_cleaned.csv")
+
+    X_train, X_test, y_train, y_test = split_data(df=df, test_size=0.2)
+    X_train_scaled, X_test_scaled = scale_data(X=X_train), scale_data(X=X_test)
+
+    basic_svr = train_basic_svr(X_train_scaled=X_train_scaled, y_train=y_train)
+    mse, rmse, mae, r2 = evaluate(model=basic_svr, X_test=X_test_scaled, y_test=y_test)
+    print("MSE:", mse)
+    print("RMSE:", rmse)
+    print("MAE:", mae)
+    print("R2:", r2)
+
