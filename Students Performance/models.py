@@ -147,6 +147,7 @@ def main():
     df = pd.read_csv(filepath_or_buffer="student_performance_cleaned.csv")
 
     X_train, X_test, y_train, y_test = split_data(df=df, test_size=0.2)
+    X_train_scaled, X_test_scaled = scale_data(X=X_train), scale_data(X=X_test)
 
     info = grid_search_polynomial_regression(X_train, X_test, y_train, y_test)
     degree, interaction_only = 2, True
@@ -204,12 +205,6 @@ def main():
     )
     print(feature_importance)
 
-if __name__ == "__main__":
-    df = pd.read_csv(filepath_or_buffer="student_performance_cleaned.csv")
-
-    X_train, X_test, y_train, y_test = split_data(df=df, test_size=0.2)
-
-    X_train_scaled, X_test_scaled = scale_data(X=X_train), scale_data(X=X_test)
     basic_knn = train_basic_knn(X_train_scaled=X_train_scaled, y_train=y_train)
     mse, rmse, mae, r2 = evaluate(model=basic_knn, X_test=X_test_scaled, y_test=y_test)
     print("MSE:", mse)
@@ -236,3 +231,6 @@ if __name__ == "__main__":
     print("RMSE:", rmse)
     print("MAE:", mae)
     print("R2:", r2)
+
+if __name__ == "__main__":
+    main()
