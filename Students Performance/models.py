@@ -5,6 +5,7 @@ from sklearn.model_selection import RandomizedSearchCV
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor 
+from sklearn.neighbors import KNeighborsRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 
@@ -19,6 +20,11 @@ def split_data(df: pd.DataFrame, test_size: float):
     )
 
     return X_train, X_test, y_train, y_test
+
+def scale_data(X):
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    return X_scaled
 
 def evaluate(model, X_test, y_test):
     y_pred = model.predict(X_test)
@@ -99,6 +105,22 @@ def random_forest_regression_feature_importance(
 
     return importance_df
 
+
+def train_basic_knn(X_train_scaled, y_train, n_neighbors: int = 5):
+    knn = KNeighborsRegressor(
+        n_neighbors=n_neighbors,
+        weights="uniform",      
+        algorithm="auto",       
+        leaf_size=30,
+        p=2,                    
+        n_jobs=-1
+    )
+
+    knn.fit(X_train_scaled, y_train)
+
+    return knn
+
+
 def main():
     df = pd.read_csv(filepath_or_buffer="student_performance_cleaned.csv")
 
@@ -160,10 +182,15 @@ def main():
     )
     print(feature_importance)
 
-
-
-
-
-
 if __name__ == "__main__":
-    main()
+    df = pd.read_csv(filepath_or_buffer="student_performance_cleaned.csv")
+
+    X_train, X_test, y_train, y_test = split_data(df=df, test_size=0.2)
+
+    X_train_scaled, X_test_scaled = scale_data(X=X_train), scale_data(X=X_test)
+    basic_knn = train_basic_knn(X_train_scaled=X_train_scaled, y_train=y_train)
+    mse, rmse, mae, r2 = evaluate(model=basic_knn, X_test=X_test_scaled, y_test=y_test)
+    print("MSE:", mse)
+    print("RMSE:", rmse)
+    print("MAE:", mae)
+    print("R2:", r2)
