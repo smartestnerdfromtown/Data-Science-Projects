@@ -1,9 +1,12 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import RandomizedSearchCV
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.ensemble import RandomForestRegressor 
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 
 RANDOM_STATE = 777
 
@@ -17,6 +20,16 @@ def split_data(df: pd.DataFrame, test_size: float):
 
     return X_train, X_test, y_train, y_test
 
+def evaluate(model, X_test, y_test):
+    y_pred = model.predict(X_test)
+    
+    mse = mean_squared_error(y_test, y_pred)
+    rmse = np.sqrt(mse)
+    mae = mean_absolute_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+
+    return mse, rmse, mae, r2
+
 def train_polynomial_regression(degree: int, interaction_only: bool, X_train, X_test, y_train):
     polynomial_regression = PolynomialFeatures(degree=degree, interaction_only=interaction_only)
 
@@ -27,14 +40,6 @@ def train_polynomial_regression(degree: int, interaction_only: bool, X_train, X_
     linear_regression.fit(X_train_poly, y_train)
 
     return linear_regression, X_test_poly
-
-def evaluate(model, X_test, y_test):
-    y_pred = model.predict(X_test)
-    
-    mse = mean_squared_error(y_test, y_pred)
-    r2 = r2_score(y_test, y_pred)
-
-    return mse, r2
 
 def grid_search_polynomial_regression(X_train, X_test, y_train, y_test):
     info = dict()
@@ -59,6 +64,27 @@ def grid_search_polynomial_regression(X_train, X_test, y_train, y_test):
 
     return info
 
+def randomized_search_random_forest_regression(
+        param_grid: dict, 
+        n_iter: int, 
+        scoring: str,
+        X_train,
+        y_train
+    ):
+    random_search = RandomizedSearchCV(
+        RandomForestRegressor(random_state=RANDOM_STATE, n_jobs=-1),
+        param_distributions=param_grid,
+        n_iter=n_iter,
+        cv=5,
+        scoring=scoring,
+        random_state=RANDOM_STATE,
+        n_jobs=-1
+    ) 
+
+    random_search.fit(X_train, y_train)
+
+    return random_search.best_estimator_, random_search.best_params_
+
 def main():
     df = pd.read_csv(filepath_or_buffer="student_performance_cleaned.csv")
 
@@ -78,8 +104,39 @@ def main():
     print("Coefficients:", polynomial_regression.coef_)
     print("Intercept:", polynomial_regression.intercept_)
 
-    mse, r2 = evaluate(model=polynomial_regression, X_test=X_test_poly, y_test=y_test)
+    mse, rmse, mae, r2 = evaluate(model=polynomial_regression, X_test=X_test_poly, y_test=y_test)
     print("MSE:", mse)
+    print("RMSE:", rmse)
+    print("MAE:", mae)
+    print("R2:", r2)
+
+    
+    param_grid = {
+        "n_estimators": np.arange(100, 1000, 100),
+        "max_depth": [None] + list(np.arange(5, 51, 5)),
+        "min_samples_split": np.arange(2, 11),
+        "min_samples_leaf": np.arange(1, 6),
+        "max_features": ["sqrt", "log2", None]
+    }
+
+    random_forest_regression, best_params = randomized_search_random_forest_regression(
+        param_grid=param_grid,
+        n_iter=10,
+        scoring="r2",
+        X_train=X_train,
+        y_train=y_train
+    )
+
+    print(best_params)
+
+    mse, rmse, mae, r2 = evaluate(
+        model=random_forest_regression, 
+        X_test=X_test, 
+        y_test=y_test
+    )
+    print("MSE:", mse)
+    print("RMSE:", rmse)
+    print("MAE:", mae)
     print("R2:", r2)
 
 
