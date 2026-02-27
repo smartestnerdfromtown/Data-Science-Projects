@@ -153,6 +153,29 @@ def train_basic_svr(X_train_scaled, y_train):
 
     return svr
 
+def randomized_search_svr(
+        X_train_scaled, 
+        y_train, 
+        param_grid: dict,
+        n_iter: int = 25,
+        scoring: str = "r2"
+    ):
+
+    random_search = RandomizedSearchCV(
+        SVR(),
+        param_distributions=param_grid,
+        n_iter=n_iter,
+        cv=5,
+        scoring=scoring,
+        random_state=RANDOM_STATE,
+        n_jobs=-1
+    )
+
+    random_search.fit(X_train_scaled, y_train)
+
+    return random_search.best_estimator_, random_search.best_params_
+
+
 
 def main():
     df = pd.read_csv(filepath_or_buffer="student_performance_cleaned.csv")
@@ -243,12 +266,6 @@ def main():
     print("MAE:", mae)
     print("R2:", r2)
 
-if __name__ == "__main__":
-    df = pd.read_csv(filepath_or_buffer="student_performance_cleaned.csv")
-
-    X_train, X_test, y_train, y_test = split_data(df=df, test_size=0.2)
-    X_train_scaled, X_test_scaled = scale_data(X=X_train), scale_data(X=X_test)
-
     basic_svr = train_basic_svr(X_train_scaled=X_train_scaled, y_train=y_train)
     mse, rmse, mae, r2 = evaluate(model=basic_svr, X_test=X_test_scaled, y_test=y_test)
     print("MSE:", mse)
@@ -256,3 +273,28 @@ if __name__ == "__main__":
     print("MAE:", mae)
     print("R2:", r2)
 
+    param_grid = {
+        "kernel": ["rbf", "linear", "poly", "sigmoid"],
+        "C": np.logspace(-2, 3, 100),
+        "epsilon": np.linspace(0.001, 1, 100),
+        "gamma": ["scale", "auto"]
+    }
+
+    random_svr, _ = randomized_search_svr(
+        X_train_scaled=X_train_scaled,
+        y_train=y_train,
+        param_grid=param_grid,
+        n_iter=10, 
+        scoring="r2"
+    )
+
+    mse, rmse, mae, r2 = evaluate(model=random_svr, X_test=X_test_scaled, y_test=y_test)
+    print("MSE:", mse)
+    print("RMSE:", rmse)
+    print("MAE:", mae)
+    print("R2:", r2)
+
+if __name__ == "__main__":
+    main()
+
+    
