@@ -120,6 +120,28 @@ def train_basic_knn(X_train_scaled, y_train, n_neighbors: int = 5):
 
     return knn
 
+def randomized_search_knn(
+        X_train_scaled, 
+        y_train, 
+        param_grid, 
+        n_iter: int = 25, 
+        scoring: str = "r2"
+    ):     
+    random_search = RandomizedSearchCV(
+        KNeighborsRegressor(n_jobs=-1),
+        param_distributions=param_grid,
+        n_iter=n_iter,
+        cv=5,
+        scoring=scoring,
+        random_state=RANDOM_STATE,
+        n_jobs=-1
+    )
+
+    random_search.fit(X_train_scaled, y_train)
+
+    return random_search.best_estimator_, random_search.best_params_
+
+
 
 def main():
     df = pd.read_csv(filepath_or_buffer="student_performance_cleaned.csv")
@@ -190,6 +212,26 @@ if __name__ == "__main__":
     X_train_scaled, X_test_scaled = scale_data(X=X_train), scale_data(X=X_test)
     basic_knn = train_basic_knn(X_train_scaled=X_train_scaled, y_train=y_train)
     mse, rmse, mae, r2 = evaluate(model=basic_knn, X_test=X_test_scaled, y_test=y_test)
+    print("MSE:", mse)
+    print("RMSE:", rmse)
+    print("MAE:", mae)
+    print("R2:", r2)
+
+    param_grid = {
+        "n_neighbors": [3, 5, 7, 9, 15, 25],
+        "weights": ["uniform", "distance"],
+        "p": [1, 2],
+        "algorithm": ["auto", "ball_tree", "kd_tree", "brute"]
+    }
+    random_knn, random_knn_parameters = randomized_search_knn(
+        X_train_scaled=X_train_scaled,
+        y_train=y_train,
+        param_grid=param_grid,
+        n_iter=25, 
+        scoring="r2"
+    )
+
+    mse, rmse, mae, r2 = evaluate(model=random_knn, X_test=X_test_scaled, y_test=y_test)
     print("MSE:", mse)
     print("RMSE:", rmse)
     print("MAE:", mae)
