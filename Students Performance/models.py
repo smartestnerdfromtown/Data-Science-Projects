@@ -85,6 +85,20 @@ def randomized_search_random_forest_regression(
 
     return random_search.best_estimator_, random_search.best_params_
 
+def random_forest_regression_feature_importance(
+        random_forest_model,
+        df: pd.DataFrame
+    ):
+    importances = random_forest_model.feature_importances_
+    feature_names = df.columns[: len(df.columns) - 1]
+
+    importance_df = pd.DataFrame({
+        "feature": feature_names,
+        "importance": importances
+    }).sort_values(by="importance", ascending=False)
+
+    return importance_df
+
 def main():
     df = pd.read_csv(filepath_or_buffer="student_performance_cleaned.csv")
 
@@ -128,6 +142,7 @@ def main():
     )
 
     print(best_params)
+    print(type(random_forest_regression))
 
     mse, rmse, mae, r2 = evaluate(
         model=random_forest_regression, 
@@ -138,6 +153,12 @@ def main():
     print("RMSE:", rmse)
     print("MAE:", mae)
     print("R2:", r2)
+
+    feature_importance = random_forest_regression_feature_importance(
+        random_forest_model=random_forest_regression, 
+        df=df
+    )
+    print(feature_importance)
 
 
 
