@@ -4,6 +4,6 @@ Checklist:
 -- x age \
 -- x gender \
 -- x daily_gaming_hours \
-game_genre
-primary_game
-gaming_platform
+-- x game_genre
+-- x primary_game
+-- x gaming_platform
