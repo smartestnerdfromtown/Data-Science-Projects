@@ -13,17 +13,20 @@ def read_image(image_path: str | pathlib.Path):
     image = cv2.imread(filename=image_path)
     image_rgb = cv2.cvtColor(src=image, code=cv2.COLOR_BGR2RGB)
 
+    if image is None:
+        raise ValueError(f"Image not found: {image_path}")
+
     return image_rgb
 
 def predict(image_rgb, model: YOLO, confidence_threshold: float):
-    results = model(image_rgb, conf=confidence_threshold)[0]
+    results = model(image_rgb, conf=confidence_threshold, device=DEVICE)[0]
 
-    return results, results.names
+    return results
 
-def get_boxes(prediction_results):
-    return prediction_results.boxes
+def visualize(img_rgb, to_be_annotated_img_rgb,  results, colors):
+    boxes = results.boxes
+    class_names = results.names
 
-def vizualize(img_rgb, to_be_annotated_img_rgb,  boxes, class_names, colors):
     class_labels = {}
     for box in boxes:
         x1, y1, x2, y2 = map(int, box.xyxy[0])
@@ -32,6 +35,17 @@ def vizualize(img_rgb, to_be_annotated_img_rgb,  boxes, class_names, colors):
         class_name = class_names[class_id]
 
         color = colors[class_id % len(colors)].tolist()
+        confidence = float(box.conf[0])
+
+        cv2.putText(
+            to_be_annotated_img_rgb,
+            f"{class_name} {confidence:.2f}",
+            (x1, y1 - 5),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            color,
+            2
+        )
 
         cv2.rectangle(
             img=to_be_annotated_img_rgb, 
@@ -65,20 +79,20 @@ def vizualize(img_rgb, to_be_annotated_img_rgb,  boxes, class_names, colors):
 
     plt.tight_layout()
     plt.show()
+    
+    return to_be_annotated_img_rgb
 
 
 img_rgb = read_image(image_path="guy_and_cats.jpg")
-to_be_annotated_img_rgb = read_image(image_path="guy_and_cats.jpg")
-results, class_names = predict(image_rgb=img_rgb, model=MODEL, confidence_threshold=0.2)
-boxes = get_boxes(prediction_results=results)
+to_be_annotated_img_rgb = img_rgb.copy()
+results = predict(image_rgb=img_rgb, model=MODEL, confidence_threshold=0.35)
 
 np.random.seed(42)
-colors = np.random.randint(0, 255, size=(len(class_names), 3))
+colors = np.random.randint(0, 255, size=(len(results.names), 3))
 
-vizualize(
+visualize(
     img_rgb=img_rgb,
     to_be_annotated_img_rgb=to_be_annotated_img_rgb,
-    boxes=boxes, 
-    class_names=class_names, 
+    results=results,
     colors=colors
 )
