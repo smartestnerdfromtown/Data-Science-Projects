@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -81,6 +82,20 @@ def random_forest_tuning(param_dist, rf_pipeline):
 
     return search
 
+def visualize_importances(feature_importance: pd.DataFrame):
+    feature_importance = feature_importance.sort_values("importance", ascending=True)
+
+    plt.figure(figsize=(10, 6))
+
+    plt.barh(feature_importance["feature"], feature_importance["importance"])
+
+    plt.title("Feature Importances (Random Forest)", fontsize=14)
+    plt.xlabel("Importance Score")
+    plt.ylabel("Features")
+
+    plt.tight_layout()
+    plt.show()
+
 def main():
     df = pd.read_csv(filepath_or_buffer="seattle_weather_prepared.csv")
     df = df.drop(columns="date")
@@ -121,7 +136,6 @@ def main():
     rf_tuned.fit(X_train, y_train)
     rf_best_model = rf_tuned.best_estimator_
     print(evaluate_model(model=rf_best_model, X_test=X_test, y_test=y_test))
-
 
 
 if __name__ == "__main__":
