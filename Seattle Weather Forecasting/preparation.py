@@ -39,6 +39,8 @@ def main():
     print(df.head())
     print(df.tail())
 
+    df.to_csv(path_or_buf="seattle_weather_prepared.csv")
+
 
 
 if __name__ == "__main__":
