@@ -31,7 +31,7 @@ def evaluate_model(model, X_test, y_test):
 
 def extract_features(df: pd.DataFrame):
     num_features = df.select_dtypes(include=np.number).columns.tolist()
-    cat_features = df.select_dtypes(include="object").columns.tolist()
+    cat_features = df.select_dtypes(include=["object", "str"]).columns.tolist()
     return num_features, cat_features
 
 def random_forest_pipeline(X_train, y_train, num_features: list, cat_features: list):
@@ -65,12 +65,21 @@ def random_forest_pipeline(X_train, y_train, num_features: list, cat_features: l
         ("model", rf)
     ])
 
-    pipeline.fit(X_train, y_train)
     return pipeline
 
+def random_forest_tuning(param_dist, rf_pipeline):
+    search = RandomizedSearchCV(
+        rf_pipeline,
+        param_distributions=param_dist,
+        n_iter=20,
+        cv=5,
+        scoring="accuracy",
+        n_jobs=-1,
+        random_state=RANDOM_STATE,
+        verbose=1
+    )
 
-
-
+    return search
 
 def main():
     df = pd.read_csv(filepath_or_buffer="seattle_weather_prepared.csv")
@@ -82,6 +91,12 @@ def main():
     num_features, cat_features = extract_features(df=df_pipeline)
     X_train, X_test, y_train, y_test = split_data(X=X, y=y)
 
+    rf_pipeline = random_forest_pipeline(
+        X_train=X_train, 
+        y_train=y_train, 
+        num_features=num_features, 
+        cat_features=cat_features
+    )
 
     rf = random_forest_pipeline(
         X_train=X_train, 
@@ -89,8 +104,24 @@ def main():
         num_features=num_features, 
         cat_features=cat_features
     )
+    rf.fit(X_train, y_train)
 
-    print(evaluate_model(model=rf, X_test=X_test, y_test=y_test)) 
+    print(evaluate_model(model=rf, X_test=X_test, y_test=y_test))
+
+
+    param_dist = {
+        "model__n_estimators": [100, 200, 500],
+        "model__max_depth": [None, 10, 20, 30],
+        "model__min_samples_split": [2, 5, 10],
+        "model__min_samples_leaf": [1, 2, 4],
+        "model__max_features": ["sqrt", "log2"]
+    }
+    
+    rf_tuned = random_forest_tuning(param_dist=param_dist, rf_pipeline=rf_pipeline)
+    rf_tuned.fit(X_train, y_train)
+    rf_best_model = rf_tuned.best_estimator_
+    print(evaluate_model(model=rf_best_model, X_test=X_test, y_test=y_test))
+
 
 
 if __name__ == "__main__":
