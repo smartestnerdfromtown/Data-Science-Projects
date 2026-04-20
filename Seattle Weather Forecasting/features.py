@@ -1,10 +1,11 @@
 import pandas as pd
+import numpy as np
 
 from sklearn.model_selection import train_test_split
 
 def extract_features(df: pd.DataFrame):
     num_features = df.select_dtypes(include=np.number).columns.tolist()
-    cat_features = df.select_dtypes(include=["object", "str"]).columns.tolist()
+    cat_features = df.select_dtypes(include=["object", "string"]).columns.tolist()
     return num_features, cat_features
 
 def split_data(

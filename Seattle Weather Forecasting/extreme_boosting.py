@@ -45,6 +45,26 @@ def main():
     num_features, cat_features = extract_features(df=df_pipeline)
     X_train, X_test, y_train, y_test = split_data(X=X, y=y)
 
+    gb_model = GradientBoostingClassifier(
+        n_estimators=200,
+        learning_rate=0.05,
+        max_depth=3,
+        subsample=0.8,
+        random_state=777
+    )
+
+    gb_pipeline = gradient_boosting_pipeline(
+        model=gb_model,
+        num_features=num_features,
+        cat_features=cat_features
+    )
+
+    gb_pipeline.fit(X_train, y_train)
+
+    y_pred = gb_pipeline.predict(X_test)
+    print(accuracy_score(y_test, y_pred))
+    
+
 
 
 
