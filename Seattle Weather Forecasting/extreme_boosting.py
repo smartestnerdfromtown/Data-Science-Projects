@@ -35,6 +35,25 @@ def gradient_boosting_pipeline(model, num_features: list, cat_features: list):
 
     return pipeline
 
+def gradient_boosting_tuning(
+        param_dist: dict, 
+        gb_pipeline, 
+        scoring: str, 
+        random_state: int
+    ):
+    search = RandomizedSearchCV(
+        estimator=gb_pipeline,
+        param_distributions=param_dist,
+        n_iter=20,
+        cv=5,
+        scoring=scoring,
+        n_jobs=-1,
+        random_state=random_state
+    )
+
+    return search
+
+
 def main():
     df = pd.read_csv(filepath_or_buffer="seattle_weather_prepared.csv")
     df = df.drop(columns="date")
@@ -64,6 +83,32 @@ def main():
     y_pred = gb_pipeline.predict(X_test)
     print(accuracy_score(y_test, y_pred))
     
+    param_dist = {
+        "model__n_estimators": [100, 200, 300],
+        "model__learning_rate": [0.01, 0.05, 0.1, 0.2],
+        "model__max_depth": [3, 4, 5],
+        "model__min_samples_split": [2, 5, 10],
+        "model__min_samples_leaf": [1, 2, 4],
+        "model__subsample": [0.6, 0.8, 1.0],
+        "model__max_features": ["sqrt", "log2", None]
+    }
+        
+    gb_pipeline = gradient_boosting_pipeline(
+        model=gb_model,
+        num_features=num_features,
+        cat_features=cat_features
+    )
+    gb_tuned = gradient_boosting_tuning(
+        param_dist=param_dist,
+        gb_pipeline=gb_pipeline,
+        scoring="accuracy",
+        random_state=777
+    )
+    gb_tuned.fit(X_train, y_train)
+    gb_best_model = gb_tuned.best_estimator_
+
+    y_pred = gb_best_model.predict(X_test)
+    print(accuracy_score(y_test, y_pred))
 
 
 
