@@ -1,5 +1,7 @@
 import pandas as pd
 
+from sklearn.preprocessing import LabelEncoder
+
 
 def convert_to_datetime(df: pd.DataFrame, column: str) -> pd.DataFrame:
     df[column] = pd.to_datetime(df[column], errors="coerce")
@@ -35,6 +37,8 @@ def main():
     df["year"] = extract_part(df=df, column="date", part="year")
     df["month"] = extract_part(df=df, column="date", part="month")
     df["day"] = extract_part(df=df, column="date", part="day")
+
+    df["weather_encoded"] = LabelEncoder().fit_transform(df["weather"])
 
     print(df.head())
     print(df.tail())

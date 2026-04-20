@@ -38,9 +38,10 @@ def extreme_gradient_boosting_pipeline(model, num_features: list, cat_features: 
 def main():
     df = pd.read_csv(filepath_or_buffer="seattle_weather_prepared.csv")
     df = df.drop(columns="date")
-    df_pipeline = df.drop(columns="weather")
-    X = df.drop(columns="weather")
-    y = df["weather"]
+    
+    df_pipeline = df.drop(columns=["weather", "weather_encoded"])
+    X = df.drop(columns=["weather", "weather_encoded"])
+    y = df["weather_encoded"]
 
     num_features, cat_features = extract_features(df=df_pipeline)
     X_train, X_test, y_train, y_test = split_data(X=X, y=y)
