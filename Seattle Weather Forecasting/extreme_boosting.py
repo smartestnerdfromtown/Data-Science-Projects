@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 
 from features import extract_features, split_data
+from evaluate import evaluate_classification
 
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.model_selection import train_test_split
@@ -107,8 +108,17 @@ def main():
     gb_tuned.fit(X_train, y_train)
     gb_best_model = gb_tuned.best_estimator_
 
-    y_pred = gb_best_model.predict(X_test)
-    print(accuracy_score(y_test, y_pred))
+    evaluation_metrics = evaluate_classification(
+        model=gb_best_model,
+        X_test=X_test,
+        y_test=y_test,
+        average="weighted",
+        return_dict=True,
+        verbose=True
+    )
+
+    for metric, value in evaluation_metrics.items():
+        print(f"{metric}: {value}")
 
 
 
