@@ -5,7 +5,6 @@ from features import extract_features, split_data
 from evaluate import evaluate_classification
 
 from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
