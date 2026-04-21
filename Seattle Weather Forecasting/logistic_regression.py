@@ -36,6 +36,25 @@ def create_logistic_regression_pipeline(model, num_features: list, cat_features:
     return pipeline
 
 
+def logistic_regression_tuning(
+        param_dist: dict, 
+        logistic_regression_pipeline, 
+        scoring: str = "accuracy", 
+        random_state: int = 777
+    ):
+    search = RandomizedSearchCV(
+        estimator=logistic_regression_pipeline,
+        param_distributions=param_dist,
+        n_iter=10,
+        cv=5,
+        scoring=scoring,
+        n_jobs=-1,
+        random_state=random_state
+    )
+
+    return search
+
+
 def main():
     df = pd.read_csv(filepath_or_buffer="seattle_weather_prepared.csv")
     df = df.drop(columns="date")
@@ -70,6 +89,42 @@ def main():
         return_dict=True,
         verbose=True
     )
+
+    for metric, value in evaluation_metrics.items():
+        print(f"{metric}: {value}")
+
+    logistic_regression_pipeline = create_logistic_regression_pipeline(
+        model=logistic_regression,
+        num_features=num_features,
+        cat_features=cat_features
+    )
+
+    param_dist = {
+        "model__penalty": ["l2"],
+        "model__C": [0.01, 0.1, 1, 10, 100],
+        "model__solver": ["lbfgs", "saga"]
+    }
+
+    logistic_regression_tuned = logistic_regression_tuning(
+        param_dist=param_dist,
+        logistic_regression_pipeline=logistic_regression_pipeline,
+        scoring="f1_weighted",
+        random_state=777
+    )
+    logistic_regression_tuned.fit(X_train, y_train)
+
+    logistic_regression_best_model = logistic_regression_tuned.best_estimator_
+
+    evaluation_metrics = evaluate_classification(
+        model=logistic_regression_best_model,
+        X_test=X_test,
+        y_test=y_test,
+        average="weighted",
+        return_dict=True,
+        verbose=True
+    )
+
+    print("-" * 20)
 
     for metric, value in evaluation_metrics.items():
         print(f"{metric}: {value}")
