@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from typing import Dict, List, Set, Any
 
 from features import extract_features, split_data
 from evaluate import evaluate_classification
@@ -11,8 +12,11 @@ from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import RandomizedSearchCV
 
+def build_preprocessor(
+    num_features: list[str],
+    cat_features: list[str]
+) -> ColumnTransformer:
 
-def create_logistic_regression_pipeline(model, num_features: list, cat_features: list):
     num_pipeline = Pipeline([
         ("imputer", SimpleImputer(strategy="median")),
         ("scaler", StandardScaler())
@@ -23,23 +27,30 @@ def create_logistic_regression_pipeline(model, num_features: list, cat_features:
         ("encoder", OneHotEncoder(handle_unknown="ignore"))
     ])
 
-    preprocessor = ColumnTransformer([
+    return ColumnTransformer([
         ("num", num_pipeline, num_features),
         ("cat", cat_pipeline, cat_features)
     ])
 
-    pipeline = Pipeline([
+
+def create_logistic_regression_pipeline(
+    model,
+    num_features: list[str],
+    cat_features: list[str]
+) -> Pipeline:
+
+    preprocessor = build_preprocessor(num_features, cat_features)
+
+    return Pipeline([
         ("preprocessing", preprocessor),
         ("model", model)
     ])
 
-    return pipeline
-
 
 def logistic_regression_tuning(
-        param_dist: dict, 
-        logistic_regression_pipeline, 
-        scoring: str = "accuracy", 
+        logistic_regression_pipeline: Pipeline,
+        param_dist: Dict[str, Any],
+        scoring: str = "f1_weighted",
         random_state: int = 777
     ):
     search = RandomizedSearchCV(
@@ -49,7 +60,8 @@ def logistic_regression_tuning(
         cv=5,
         scoring=scoring,
         n_jobs=-1,
-        random_state=random_state
+        random_state=random_state,
+        verbose=1
     )
 
     return search
