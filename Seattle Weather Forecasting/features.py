@@ -23,3 +23,13 @@ def split_data(
     )
 
     return X_train, X_test, y_train, y_test
+
+def prepare_data(file_path: str):
+    df = pd.read_csv(filepath_or_buffer="seattle_weather_prepared.csv")
+    df = df.drop(columns="date")
+
+    df_pipeline = df.drop(columns=["weather", "weather_encoded"])
+    X = df.drop(columns=["weather", "weather_encoded"])
+    y = df["weather_encoded"]
+
+    return df_pipeline, X, y
