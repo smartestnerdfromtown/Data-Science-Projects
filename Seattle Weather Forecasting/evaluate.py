@@ -2,6 +2,8 @@ from typing import Dict, Any, Optional
 
 import numpy as np
 import pandas as pd
+import os
+import csv
 
 from sklearn.metrics import (
     accuracy_score,
@@ -66,3 +68,15 @@ def evaluate_classification(
         print("Confusion Matrix:\n", results["confusion_matrix"])
 
     return results if return_dict else None
+
+
+def save_evaluation_metrics(file_to_csv: str, model_name: str, results: dict) -> None:
+    file_exists = os.path.exists(file_to_csv)
+
+    with open(file_to_csv, mode="a", newline="") as f:
+        writer = csv.writer(f)
+
+        if not file_exists:
+            writer.writerow(["model_name"] + list(results.keys()))
+
+        writer.writerow([model_name] + list(results.values()))
