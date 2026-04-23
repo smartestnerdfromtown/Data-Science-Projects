@@ -3,6 +3,7 @@ import numpy as np
 
 from features import extract_features, split_data, prepare_data
 from evaluate import evaluate_classification, save_evaluation_metrics
+from define_pipeline import create_pipeline, tuning
 
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
@@ -12,47 +13,6 @@ from sklearn.model_selection import RandomizedSearchCV
 from sklearn.neural_network import MLPClassifier
 
 RANDOM_STATE = 777
-
-def create_pipeline(model, num_features: list, cat_features: list):
-    num_pipeline = Pipeline([
-        ("imputer", SimpleImputer(strategy="median")),
-        ("scaler", StandardScaler())
-    ])
-
-    cat_pipeline = Pipeline([
-        ("imputer", SimpleImputer(strategy="most_frequent")),
-        ("encoder", OneHotEncoder(handle_unknown="ignore"))
-    ])
-
-    preprocessor = ColumnTransformer([
-        ("num", num_pipeline, num_features),
-        ("cat", cat_pipeline, cat_features)
-    ])
-
-    pipeline = Pipeline([
-        ("preprocessing", preprocessor),
-        ("model", model)
-    ])
-
-    return pipeline
-
-def tuning(
-        param_dist: dict, 
-        pipeline, 
-        scoring: str = "accuracy", 
-        random_state: int = 777
-    ):
-    search = RandomizedSearchCV(
-        estimator=pipeline,
-        param_distributions=param_dist,
-        n_iter=10,
-        cv=5,
-        scoring=scoring,
-        n_jobs=-1,
-        random_state=random_state
-    )
-
-    return search
 
 def main():
     df_pipeline, X, y = prepare_data(file_path="seattle_weather_prepared.csv")
@@ -120,7 +80,6 @@ def main():
         param_dist=param_dist,
         pipeline=pipeline,
         scoring="f1_weighted",
-        random_state=777
     )
     
     pipeline_tuned.fit(X_train, y_train)
