@@ -39,6 +39,25 @@ def create_pipeline(model, num_features: list, cat_features: list):
     return pipeline
 
 
+def tuning(
+        param_dist: dict, 
+        pipeline, 
+        scoring: str = "accuracy", 
+        random_state: int = 777
+    ):
+    search = RandomizedSearchCV(
+        estimator=pipeline,
+        param_distributions=param_dist,
+        n_iter=10,
+        cv=5,
+        scoring=scoring,
+        n_jobs=-1,
+        random_state=random_state
+    )
+
+    return search
+
+
 def main():
     df_pipeline, X, y = prepare_data(file_path="seattle_weather_prepared.csv")
     num_features, cat_features = extract_features(df=df_pipeline)
@@ -81,6 +100,53 @@ def main():
     save_evaluation_metrics(
         file_to_csv="models_metrics.csv", 
         model_name="extreme_random_forest",
+        results=evaluation_metrics
+    )
+   
+    param_dist = {
+        "model__n_estimators": np.arange(200, 1200, 100),
+        "model__max_depth": [None] + list(range(3, 30)),
+        "model__min_samples_split": np.arange(2, 20),
+        "model__min_samples_leaf": np.arange(1, 20),
+        "model__max_features": ["sqrt", "log2", None],
+        "model__criterion": ["gini", "entropy"]
+    }
+
+    pipeline = create_pipeline(
+        model=model,
+        num_features=num_features,
+        cat_features=cat_features
+    )
+    pipeline_tuned = tuning(
+        param_dist=param_dist,
+        pipeline=pipeline,
+        scoring="f1_weighted",
+        random_state=777
+    )
+    
+    pipeline_tuned.fit(X_train, y_train)
+
+    pipeline_best_model = pipeline_tuned.best_estimator_
+
+    evaluation_metrics = evaluate_classification(
+        model=pipeline_best_model,
+        X_test=X_test,
+        y_test=y_test,
+        include_cm=False,
+        include_roc_auc=False,
+        average="weighted",
+        return_dict=True,
+        verbose=True
+    )
+
+    print("-" * 20)
+
+    for metric, value in evaluation_metrics.items():
+        print(f"{metric}: {value}")
+
+    save_evaluation_metrics(
+        file_to_csv="models_metrics.csv", 
+        model_name="tuned_extreme_random_forest",
         results=evaluation_metrics
     )
     
