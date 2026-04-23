@@ -20,6 +20,8 @@ def evaluate_classification(
     model,
     X_test,
     y_test,
+    include_cm: bool = False,
+    include_roc_auc: bool = False,
     average: str = "binary",
     return_dict: bool = True,
     verbose: bool = True
@@ -53,19 +55,22 @@ def evaluate_classification(
         "f1": f1_score(y_test, y_pred, average=average, zero_division=0),
     }
 
-    if hasattr(model, "predict_proba"):
-        try:
-            y_proba = model.predict_proba(X_test)[:, 1]
-            results["roc_auc"] = roc_auc_score(y_test, y_proba)
-        except Exception:
-            results["roc_auc"] = None
+    if include_roc_auc:
+        if hasattr(model, "predict_proba"):
+            try:
+                y_proba = model.predict_proba(X_test)[:, 1]
+                results["roc_auc"] = roc_auc_score(y_test, y_proba)
+            except Exception:
+                results["roc_auc"] = None
 
-    results["confusion_matrix"] = confusion_matrix(y_test, y_pred)
+    if include_cm:
+        results["confusion_matrix"] = confusion_matrix(y_test, y_pred)
 
     if verbose:
         print("\n=== Classification Report ===")
         print(classification_report(y_test, y_pred))
-        print("Confusion Matrix:\n", results["confusion_matrix"])
+        if include_cm:
+            ("Confusion Matrix:\n", results["confusion_matrix"])
 
     return results if return_dict else None
 

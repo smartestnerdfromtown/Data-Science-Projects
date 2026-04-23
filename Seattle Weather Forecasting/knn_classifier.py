@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 from features import extract_features, split_data
-from evaluate import evaluate_classification
+from evaluate import evaluate_classification, save_evaluation_metrics
 
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
@@ -83,6 +83,8 @@ def main():
         model=knn_pipeline,
         X_test=X_test,
         y_test=y_test,
+        include_cm=False,
+        include_roc_auc=False,
         average="weighted",
         return_dict=True,
         verbose=True
@@ -90,6 +92,13 @@ def main():
 
     for metric, value in evaluation_metrics.items():
         print(f"{metric}: {value}")
+
+
+    save_evaluation_metrics(
+        file_to_csv="models_metrics.csv", 
+        model_name="knn_classifier",
+        results=evaluation_metrics
+    )
 
     param_dist = {
         "model__n_neighbors": [3, 5, 7, 9, 11],
