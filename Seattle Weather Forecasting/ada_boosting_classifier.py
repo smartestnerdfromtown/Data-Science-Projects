@@ -11,6 +11,7 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.ensemble import AdaBoostClassifier
+from sklearn.tree import DecisionTreeClassifier
 
 def main():
     df_pipeline, X, y = prepare_data(file_path="seattle_weather_prepared.csv")
@@ -51,6 +52,54 @@ def main():
     save_evaluation_metrics(
         file_to_csv="models_metrics.csv", 
         model_name="ada_boosting_classifier",
+        results=evaluation_metrics
+    )
+
+    param_dist = {
+        "model__n_estimators": [100, 200, 300, 500],
+        "model__learning_rate": np.logspace(-2, 0, 8),
+
+        "model__estimator": [DecisionTreeClassifier()],
+        "model__estimator__max_depth": [1, 2, 3],
+        "model__estimator__min_samples_split": [2, 5, 10],
+        "model__estimator__min_samples_leaf": [1, 2, 4]
+    }
+
+    pipeline = create_pipeline(
+        model=model,
+        num_features=num_features,
+        cat_features=cat_features,
+        scaler=StandardScaler(),
+        encoder=OneHotEncoder()
+    )
+    pipeline_tuned = tuning(
+        param_dist=param_dist,
+        pipeline=pipeline,
+        scoring="f1_weighted",
+    )
+    
+    pipeline_tuned.fit(X_train, y_train)
+
+    pipeline_best_model = pipeline_tuned.best_estimator_
+
+    evaluation_metrics = evaluate_classification(
+        model=pipeline_best_model,
+        X_test=X_test,
+        y_test=y_test,
+        include_cm=False,
+        include_roc_auc=False,
+        average="weighted",
+        return_dict=True,
+        verbose=True
+    )
+
+    print("-" * 20)
+
+    show_results(results=evaluation_metrics)
+
+    save_evaluation_metrics(
+        file_to_csv="models_metrics.csv", 
+        model_name="tuned_ada_boosting_classifier",
         results=evaluation_metrics
     )
 
