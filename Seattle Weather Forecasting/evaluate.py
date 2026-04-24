@@ -74,6 +74,9 @@ def evaluate_classification(
 
     return results if return_dict else None
 
+def show_results(results: Dict) -> None:
+    for metric, value in results.items():
+        print(f"{metric}: {value}")
 
 def save_evaluation_metrics(file_to_csv: str, model_name: str, results: dict) -> None:
     file_exists = os.path.exists(file_to_csv)

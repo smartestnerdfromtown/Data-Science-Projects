@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 from features import extract_features, split_data, prepare_data
-from evaluate import evaluate_classification, save_evaluation_metrics
+from evaluate import evaluate_classification, save_evaluation_metrics, show_results
 from define_pipeline import create_pipeline, tuning
 
 from sklearn.pipeline import Pipeline
@@ -50,12 +50,60 @@ def main():
         verbose=True
     )
 
-    for metric, value in evaluation_metrics.items():
-        print(f"{metric}: {value}")
+    show_results(results=evaluation_metrics)
 
     save_evaluation_metrics(
         file_to_csv="models_metrics.csv", 
         model_name="ridge_classifier",
+        results=evaluation_metrics
+    )
+
+    param_dist = {
+        "model__alpha": np.logspace(-4, 4, 20), 
+        "model__fit_intercept": [True, False],
+        "model__solver": [
+            "auto", "svd", "cholesky", "lsqr", "sag", "saga"
+        ],
+        "model__tol": np.logspace(-5, -2, 10), 
+        "model__max_iter": [None, 1000, 2000, 5000],
+        "model__class_weight": [None, "balanced"]
+    }
+
+    pipeline = create_pipeline(
+        model=model,
+        num_features=num_features,
+        cat_features=cat_features,
+        scaler=StandardScaler(),
+        encoder=OneHotEncoder()
+    )
+    pipeline_tuned = tuning(
+        param_dist=param_dist,
+        pipeline=pipeline,
+        scoring="f1_weighted",
+    )
+    
+    pipeline_tuned.fit(X_train, y_train)
+
+    pipeline_best_model = pipeline_tuned.best_estimator_
+
+    evaluation_metrics = evaluate_classification(
+        model=pipeline_best_model,
+        X_test=X_test,
+        y_test=y_test,
+        include_cm=False,
+        include_roc_auc=False,
+        average="weighted",
+        return_dict=True,
+        verbose=True
+    )
+
+    print("-" * 20)
+
+    show_results(results=evaluation_metrics)
+
+    save_evaluation_metrics(
+        file_to_csv="models_metrics.csv", 
+        model_name="tuned_ridge_classifier",
         results=evaluation_metrics
     )
 
