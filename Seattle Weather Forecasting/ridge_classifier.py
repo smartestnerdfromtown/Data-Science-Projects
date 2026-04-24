@@ -13,7 +13,51 @@ from sklearn.model_selection import RandomizedSearchCV
 from sklearn.linear_model import RidgeClassifier
 
 def main():
-    pass
+    df_pipeline, X, y = prepare_data(file_path="seattle_weather_prepared.csv")
+    num_features, cat_features = extract_features(df=df_pipeline)
+    X_train, X_test, y_train, y_test = split_data(X=X, y=y)
+
+    model = RidgeClassifier(
+        alpha=1.0, 
+        fit_intercept=True, 
+        copy_X=True, 
+        max_iter=None, 
+        tol=0.0001, 
+        class_weight=None, 
+        solver='auto', 
+        positive=False, 
+        random_state=None
+    )
+
+    pipeline = create_pipeline(
+        model=model,
+        num_features=num_features,
+        cat_features=cat_features,
+        scaler=StandardScaler(),
+        encoder=OneHotEncoder()
+    )
+
+    pipeline.fit(X_train, y_train)
+
+    evaluation_metrics = evaluate_classification(
+        model=pipeline,
+        X_test=X_test,
+        y_test=y_test,
+        average="weighted",
+        include_cm=False,
+        include_roc_auc=False,
+        return_dict=True,
+        verbose=True
+    )
+
+    for metric, value in evaluation_metrics.items():
+        print(f"{metric}: {value}")
+
+    save_evaluation_metrics(
+        file_to_csv="models_metrics.csv", 
+        model_name="ridge_classifier",
+        results=evaluation_metrics
+    )
 
 if __name__ == "__main__":
     main()
