@@ -10,7 +10,6 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import RandomizedSearchCV
-from sklearn.ensemble import AdaBoostClassifier
 from sklearn.linear_model import SGDClassifier
 
 
