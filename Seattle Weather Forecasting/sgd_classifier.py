@@ -76,5 +76,64 @@ def main():
         results=evaluation_metrics
     )
 
+    param_dist = {
+        "model__loss": ["hinge", "log_loss", "modified_huber"],
+
+        "model__penalty": ["l2", "elasticnet"],
+        "model__alpha": np.logspace(-5, -2, 10),
+        "model__l1_ratio": np.linspace(0.1, 0.9, 5),
+
+        "model__learning_rate": ["optimal", "adaptive"],
+        "model__eta0": np.logspace(-3, -1, 8),
+
+        "model__max_iter": [1000, 2000, 3000],
+        "model__tol": np.logspace(-4, -3, 5),
+
+        "model__early_stopping": [True],
+        "model__validation_fraction": [0.1, 0.15],
+
+        "model__average": [True, False],
+        "model__class_weight": [None, "balanced"]
+    }
+
+    pipeline = create_pipeline(
+        model=model,
+        num_features=num_features,
+        cat_features=cat_features,
+        scaler=StandardScaler(),
+        encoder=OneHotEncoder()
+    )
+    pipeline_tuned = tuning(
+        param_dist=param_dist,
+        pipeline=pipeline,
+        scoring="f1_weighted",
+        n_iter=30
+    )
+    
+    pipeline_tuned.fit(X_train, y_train)
+
+    pipeline_best_model = pipeline_tuned.best_estimator_
+
+    evaluation_metrics = evaluate_classification(
+        model=pipeline_best_model,
+        X_test=X_test,
+        y_test=y_test,
+        include_cm=False,
+        include_roc_auc=False,
+        average="weighted",
+        return_dict=True,
+        verbose=True
+    )
+
+    print("-" * 20)
+
+    show_results(results=evaluation_metrics)
+
+    save_evaluation_metrics(
+        file_to_csv="models_metrics.csv", 
+        model_name="tuned_sgd_classifier",
+        results=evaluation_metrics
+    )
+
 if __name__ == "__main__":
     main()
