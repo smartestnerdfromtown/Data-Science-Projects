@@ -1,69 +1,20 @@
 import pandas as pd
 import numpy as np
 
-from features import extract_features, split_data
-from evaluate import evaluate_classification
+from features import extract_features, split_data, prepare_data
+from evaluate import evaluate_classification, save_evaluation_metrics, show_results
+from define_pipeline import create_pipeline, tuning
 
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from xgboost import XGBClassifier
 
-from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.impute import SimpleImputer
-from sklearn.model_selection import RandomizedSearchCV
-
-def extreme_gradient_boosting_pipeline(model, num_features: list, cat_features: list):
-    num_pipeline = Pipeline([
-        ("imputer", SimpleImputer(strategy="median"))
-    ])
-
-    cat_pipeline = Pipeline([
-        ("imputer", SimpleImputer(strategy="most_frequent")),
-        ("encoder", OneHotEncoder(handle_unknown="ignore"))
-    ])
-
-    preprocessor = ColumnTransformer([
-        ("num", num_pipeline, num_features),
-        ("cat", cat_pipeline, cat_features)
-    ])
-
-    pipeline = Pipeline([
-        ("preprocessing", preprocessor),
-        ("xgb", model)
-    ])
-
-    return pipeline
-
-def extreme_gradient_boosting_tuning(
-        param_dist: dict, 
-        xgb_pipeline, 
-        scoring: str, 
-        random_state: int
-    ):
-    search = RandomizedSearchCV(
-        estimator=xgb_pipeline,
-        param_distributions=param_dist,
-        n_iter=20,
-        cv=5,
-        scoring=scoring,
-        n_jobs=-1,
-        random_state=random_state
-    )
-
-    return search
 
 def main():
-    df = pd.read_csv(filepath_or_buffer="seattle_weather_prepared.csv")
-    df = df.drop(columns="date")
-
-    df_pipeline = df.drop(columns=["weather", "weather_encoded"])
-    X = df.drop(columns=["weather", "weather_encoded"])
-    y = df["weather_encoded"]
-
+    df_pipeline, X, y = prepare_data(file_path="seattle_weather_prepared.csv")
     num_features, cat_features = extract_features(df=df_pipeline)
     X_train, X_test, y_train, y_test = split_data(X=X, y=y)
 
-    xgb_model = XGBClassifier(
+    model = XGBClassifier(
         n_estimators=300,
         learning_rate=0.05,
         max_depth=4,
@@ -76,16 +27,18 @@ def main():
         objective="multi:softprob"
     )
 
-    xgb_pipeline = extreme_gradient_boosting_pipeline(
-        model=xgb_model,
+    pipeline = create_pipeline(
+        model=model,
         num_features=num_features,
-        cat_features=cat_features
+        cat_features=cat_features,
+        scaler=StandardScaler(),
+        encoder=OneHotEncoder()
     )
 
-    xgb_pipeline.fit(X_train, y_train)
+    pipeline.fit(X_train, y_train)
 
     evaluation_metrics = evaluate_classification(
-        model=xgb_pipeline,
+        model=pipeline,
         X_test=X_test,
         y_test=y_test,
         average="weighted",
@@ -93,35 +46,42 @@ def main():
         verbose=True
     )
 
-    for metric, value in evaluation_metrics.items():
-        print(f"{metric}: {value}")
+    show_results(results=evaluation_metrics)
+
+    save_evaluation_metrics(
+        file_to_csv="models_metrics.csv", 
+        model_name="extreme_boosting_classifier",
+        results=evaluation_metrics
+    )
+
+    ################# RANDOMIZED SEARCH OF HYPERPATAMETERS #################
 
     param_dist = {
-        "xgb__n_estimators": [100, 200, 300],
-        "xgb__learning_rate": [0.01, 0.05, 0.1],
-        "xgb__max_depth": [3, 4, 5],
-        "xgb__min_child_weight": [1, 3, 5],
-        "xgb__gamma": [0, 0.1, 0.3],
-        "xgb__subsample": [0.6, 0.8, 1.0],
-        "xgb__colsample_bytree": [0.6, 0.8, 1.0],
+        "model__n_estimators": [100, 200, 300],
+        "model__learning_rate": [0.01, 0.05, 0.1],
+        "model__max_depth": [3, 4, 5],
+        "model__min_child_weight": [1, 3, 5],
+        "model__gamma": [0, 0.1, 0.3],
+        "model__subsample": [0.6, 0.8, 1.0],
+        "model__colsample_bytree": [0.6, 0.8, 1.0],
     }
         
-    xgb_pipeline = extreme_gradient_boosting_pipeline(
-        model=xgb_model,
+    pipeline = create_pipeline(
+        model=model,
         num_features=num_features,
         cat_features=cat_features
     )
-    xgb_tuned = extreme_gradient_boosting_tuning(
+    pipeline_tuned = tuning(
         param_dist=param_dist,
-        xgb_pipeline=xgb_pipeline,
+        pipeline=pipeline,
         scoring="accuracy",
         random_state=777
     )
-    xgb_tuned.fit(X_train, y_train)
-    xgb_best_model = xgb_tuned.best_estimator_
+    pipeline_tuned.fit(X_train, y_train)
+    pipeline_best_model = pipeline_tuned.best_estimator_
 
     evaluation_metrics = evaluate_classification(
-        model=xgb_best_model,
+        model=pipeline_best_model,
         X_test=X_test,
         y_test=y_test,
         average="weighted",
@@ -131,8 +91,13 @@ def main():
 
     print("-" * 20)
 
-    for metric, value in evaluation_metrics.items():
-        print(f"{metric}: {value}")
+    show_results(results=evaluation_metrics)
+
+    save_evaluation_metrics(
+        file_to_csv="models_metrics.csv", 
+        model_name="tuned_extreme_boosting_classifier",
+        results=evaluation_metrics
+    )
 
 
 if __name__ == "__main__":
