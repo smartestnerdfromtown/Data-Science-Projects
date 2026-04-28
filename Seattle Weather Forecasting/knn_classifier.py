@@ -6,7 +6,6 @@ from evaluate import evaluate_classification, save_evaluation_metrics, show_resu
 from define_pipeline import create_pipeline, tuning
 
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.neighbors import KNeighborsClassifier
 
 
@@ -74,10 +73,10 @@ def main():
     )
     pipeline_tuned.fit(X_train, y_train)
 
-    knn_best_model = pipeline_tuned.best_estimator_
+    pipeline_best_model = pipeline_tuned.best_estimator_
 
     evaluation_metrics = evaluate_classification(
-        model=knn_best_model,
+        model=pipeline_best_model,
         X_test=X_test,
         y_test=y_test,
         average="weighted",
@@ -87,8 +86,12 @@ def main():
 
     show_results(results=evaluation_metrics)
 
-    for metric, value in evaluation_metrics.items():
-        print(f"{metric}: {value}")
+    save_evaluation_metrics(
+        file_to_csv="models_metrics.csv", 
+        model_name="tuned_knn_classifier",
+        results=evaluation_metrics
+    )
+
 
 if __name__ == "__main__":
     main()

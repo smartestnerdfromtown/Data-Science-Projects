@@ -2,14 +2,9 @@ import pandas as pd
 import numpy as np
 
 from features import extract_features, split_data, prepare_data
-from evaluate import evaluate_classification, save_evaluation_metrics
+from evaluate import evaluate_classification, save_evaluation_metrics, show_results
 from define_pipeline import create_pipeline, tuning
 
-from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.impute import SimpleImputer
-from sklearn.model_selection import RandomizedSearchCV
 from sklearn.neural_network import MLPClassifier
 
 RANDOM_STATE = 777
@@ -48,8 +43,7 @@ def main():
         verbose=True
     )
 
-    for metric, value in evaluation_metrics.items():
-        print(f"{metric}: {value}")
+    show_results(results=evaluation_metrics)
 
     save_evaluation_metrics(
         file_to_csv="models_metrics.csv", 
@@ -99,8 +93,7 @@ def main():
 
     print("-" * 20)
 
-    for metric, value in evaluation_metrics.items():
-        print(f"{metric}: {value}")
+    show_results(results=evaluation_metrics)
 
     save_evaluation_metrics(
         file_to_csv="models_metrics.csv", 
