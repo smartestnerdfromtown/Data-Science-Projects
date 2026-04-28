@@ -1,70 +1,23 @@
 import pandas as pd
 import numpy as np
 
-from features import extract_features, split_data
-from evaluate import evaluate_classification
+from features import extract_features, split_data, prepare_data
+from evaluate import evaluate_classification, save_evaluation_metrics, show_results
+from define_pipeline import create_pipeline, tuning
 
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.metrics import accuracy_score
-from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.impute import SimpleImputer
-from sklearn.model_selection import RandomizedSearchCV
 
 
-def gradient_boosting_pipeline(model, num_features: list, cat_features: list):
-    num_pipeline = Pipeline([
-        ("imputer", SimpleImputer(strategy="median"))
-    ])
-
-    cat_pipeline = Pipeline([
-        ("imputer", SimpleImputer(strategy="most_frequent")),
-        ("encoder", OneHotEncoder(handle_unknown="ignore"))
-    ])
-
-    preprocessor = ColumnTransformer([
-        ("num", num_pipeline, num_features),
-        ("cat", cat_pipeline, cat_features)
-    ])
-
-    pipeline = Pipeline([
-        ("preprocessing", preprocessor),
-        ("model", model)
-    ])
-
-    return pipeline
-
-def gradient_boosting_tuning(
-        param_dist: dict, 
-        gb_pipeline, 
-        scoring: str, 
-        random_state: int
-    ):
-    search = RandomizedSearchCV(
-        estimator=gb_pipeline,
-        param_distributions=param_dist,
-        n_iter=20,
-        cv=5,
-        scoring=scoring,
-        n_jobs=-1,
-        random_state=random_state
-    )
-
-    return search
+RANDOM_STATE = 777
 
 
 def main():
-    df = pd.read_csv(filepath_or_buffer="seattle_weather_prepared.csv")
-    df = df.drop(columns="date")
-    df_pipeline = df.drop(columns="weather")
-    X = df.drop(columns="weather")
-    y = df["weather"]
-
+    df_pipeline, X, y = prepare_data(file_path="seattle_weather_prepared.csv")
     num_features, cat_features = extract_features(df=df_pipeline)
     X_train, X_test, y_train, y_test = split_data(X=X, y=y)
 
-    gb_model = GradientBoostingClassifier(
+    model = GradientBoostingClassifier(
         n_estimators=200,
         learning_rate=0.05,
         max_depth=3,
@@ -72,16 +25,35 @@ def main():
         random_state=777
     )
 
-    gb_pipeline = gradient_boosting_pipeline(
-        model=gb_model,
+    pipeline = create_pipeline(
+        model=model,
         num_features=num_features,
-        cat_features=cat_features
+        cat_features=cat_features,
+        scaler=StandardScaler(),
+        encoder=OneHotEncoder()
     )
 
-    gb_pipeline.fit(X_train, y_train)
+    pipeline.fit(X_train, y_train)
 
-    y_pred = gb_pipeline.predict(X_test)
-    print(accuracy_score(y_test, y_pred))
+    evaluation_metrics = evaluate_classification(
+        model=pipeline,
+        X_test=X_test,
+        y_test=y_test,
+        average="weighted",
+        include_cm=False,
+        include_roc_auc=False,
+        return_dict=True,
+        verbose=True
+    )
+
+    show_results(results=evaluation_metrics)
+
+    save_evaluation_metrics(
+        file_to_csv="models_metrics.csv", 
+        model_name="gradient_boosting",
+        results=evaluation_metrics
+    )
+
     
     param_dist = {
         "model__n_estimators": [100, 200, 300],
@@ -93,32 +65,41 @@ def main():
         "model__max_features": ["sqrt", "log2", None]
     }
         
-    gb_pipeline = gradient_boosting_pipeline(
-        model=gb_model,
+    pipeline = create_pipeline(
+        model=model,
         num_features=num_features,
         cat_features=cat_features
     )
-    gb_tuned = gradient_boosting_tuning(
+    pipeline_tuned = tuning(
         param_dist=param_dist,
-        gb_pipeline=gb_pipeline,
+        pipeline=pipeline,
         scoring="accuracy",
-        random_state=777
+        random_state=RANDOM_STATE
     )
-    gb_tuned.fit(X_train, y_train)
-    gb_best_model = gb_tuned.best_estimator_
+    pipeline_tuned.fit(X_train, y_train)
 
+    pipeline_best_model = pipeline_tuned.best_estimator_
+    
     evaluation_metrics = evaluate_classification(
-        model=gb_best_model,
+        model=pipeline_best_model,
         X_test=X_test,
         y_test=y_test,
+        include_cm=False,
+        include_roc_auc=False,
         average="weighted",
         return_dict=True,
         verbose=True
     )
 
-    for metric, value in evaluation_metrics.items():
-        print(f"{metric}: {value}")
+    print("-" * 20)
 
+    show_results(results=evaluation_metrics)
+
+    save_evaluation_metrics(
+        file_to_csv="models_metrics.csv", 
+        model_name="tuned_gradien_boosting",
+        results=evaluation_metrics
+    )
 
 
 

@@ -1,86 +1,42 @@
 import pandas as pd
 import numpy as np
 
-from features import extract_features, split_data
-from evaluate import evaluate_classification, save_evaluation_metrics
+from features import extract_features, split_data, prepare_data
+from evaluate import evaluate_classification, save_evaluation_metrics, show_results
+from define_pipeline import create_pipeline, tuning
 
-from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.impute import SimpleImputer
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import RandomizedSearchCV
 
 
-def create_knn_pipeline(model, num_features: list, cat_features: list):
-    num_pipeline = Pipeline([
-        ("imputer", SimpleImputer(strategy="median")),
-        ("scaler", StandardScaler())
-    ])
+RANDOM_STATE = 777
 
-    cat_pipeline = Pipeline([
-        ("imputer", SimpleImputer(strategy="most_frequent")),
-        ("encoder", OneHotEncoder(handle_unknown="ignore"))
-    ])
-
-    preprocessor = ColumnTransformer([
-        ("num", num_pipeline, num_features),
-        ("cat", cat_pipeline, cat_features)
-    ])
-
-    pipeline = Pipeline([
-        ("preprocessing", preprocessor),
-        ("model", model)
-    ])
-
-    return pipeline
-
-def knn_tuning(
-        param_dist: dict, 
-        knn_pipeline, 
-        scoring: str = "accuracy", 
-        random_state: int = 777
-    ):
-    search = RandomizedSearchCV(
-        estimator=knn_pipeline,
-        param_distributions=param_dist,
-        n_iter=10,
-        cv=5,
-        scoring=scoring,
-        n_jobs=-1,
-        random_state=random_state
-    )
-
-    return search
 
 def main():
-    df = pd.read_csv(filepath_or_buffer="seattle_weather_prepared.csv")
-    df = df.drop(columns="date")
-
-    df_pipeline = df.drop(columns=["weather", "weather_encoded"])
-    X = df.drop(columns=["weather", "weather_encoded"])
-    y = df["weather_encoded"]
-
+    df_pipeline, X, y = prepare_data(file_path="seattle_weather_prepared.csv")
     num_features, cat_features = extract_features(df=df_pipeline)
     X_train, X_test, y_train, y_test = split_data(X=X, y=y)
 
-    knn_model = KNeighborsClassifier(
+    model = KNeighborsClassifier(
         n_neighbors=5,
         weights="distance",
         metric="minkowski",
         p=2
     )
 
-    knn_pipeline = create_knn_pipeline(
-        model=knn_model,
+    pipeline = create_pipeline(
+        model=model,
         num_features=num_features,
-        cat_features=cat_features
+        cat_features=cat_features,
+        scaler=StandardScaler(),
+        encoder=OneHotEncoder()
     )
 
-    knn_pipeline.fit(X_train, y_train)
+    pipeline.fit(X_train, y_train)
 
     evaluation_metrics = evaluate_classification(
-        model=knn_pipeline,
+        model=pipeline,
         X_test=X_test,
         y_test=y_test,
         include_cm=False,
@@ -90,9 +46,7 @@ def main():
         verbose=True
     )
 
-    for metric, value in evaluation_metrics.items():
-        print(f"{metric}: {value}")
-
+    show_results(results=evaluation_metrics)
 
     save_evaluation_metrics(
         file_to_csv="models_metrics.csv", 
@@ -106,21 +60,21 @@ def main():
         "model__p": [1, 2]
     }
 
-    knn_pipeline = create_knn_pipeline(
-        model=knn_model,
+    pipeline = create_pipeline(
+        model=model,
         num_features=num_features,
         cat_features=cat_features
     )
 
-    knn_tuned = knn_tuning(
+    pipeline_tuned = tuning(
         param_dist=param_dist,
-        knn_pipeline=knn_pipeline,
+        pipeline=pipeline,
         scoring="f1_weighted",
         random_state=777
     )
-    knn_tuned.fit(X_train, y_train)
+    pipeline_tuned.fit(X_train, y_train)
 
-    knn_best_model = knn_tuned.best_estimator_
+    knn_best_model = pipeline_tuned.best_estimator_
 
     evaluation_metrics = evaluate_classification(
         model=knn_best_model,
@@ -131,7 +85,7 @@ def main():
         verbose=True
     )
 
-    print("-" * 20)
+    show_results(results=evaluation_metrics)
 
     for metric, value in evaluation_metrics.items():
         print(f"{metric}: {value}")
