@@ -2,60 +2,14 @@ import pandas as pd
 import numpy as np
 
 from features import extract_features, split_data, prepare_data
-from evaluate import evaluate_classification, save_evaluation_metrics
+from evaluate import evaluate_classification, save_evaluation_metrics, show_results
+from define_pipeline import create_pipeline, tuning
 
-from sklearn.pipeline import Pipeline
-from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.impute import SimpleImputer
-from sklearn.model_selection import RandomizedSearchCV
 from sklearn.ensemble import ExtraTreesClassifier
 
 
 RANDOM_STATE = 777
-
-
-def create_pipeline(model, num_features: list, cat_features: list):
-    num_pipeline = Pipeline([
-        ("imputer", SimpleImputer(strategy="median")),
-        ("scaler", StandardScaler())
-    ])
-
-    cat_pipeline = Pipeline([
-        ("imputer", SimpleImputer(strategy="most_frequent")),
-        ("encoder", OneHotEncoder(handle_unknown="ignore"))
-    ])
-
-    preprocessor = ColumnTransformer([
-        ("num", num_pipeline, num_features),
-        ("cat", cat_pipeline, cat_features)
-    ])
-
-    pipeline = Pipeline([
-        ("preprocessing", preprocessor),
-        ("model", model)
-    ])
-
-    return pipeline
-
-
-def tuning(
-        param_dist: dict, 
-        pipeline, 
-        scoring: str = "accuracy", 
-        random_state: int = 777
-    ):
-    search = RandomizedSearchCV(
-        estimator=pipeline,
-        param_distributions=param_dist,
-        n_iter=10,
-        cv=5,
-        scoring=scoring,
-        n_jobs=-1,
-        random_state=random_state
-    )
-
-    return search
 
 
 def main():
@@ -78,7 +32,9 @@ def main():
     pipeline = create_pipeline(
         model=model,
         num_features=num_features,
-        cat_features=cat_features
+        cat_features=cat_features,
+        scaler=StandardScaler(),
+        encoder=OneHotEncoder()
     )
 
     pipeline.fit(X_train, y_train)
@@ -94,8 +50,7 @@ def main():
         verbose=True
     )
 
-    for metric, value in evaluation_metrics.items():
-        print(f"{metric}: {value}")
+    show_results(results=evaluation_metrics)
 
     save_evaluation_metrics(
         file_to_csv="models_metrics.csv", 
@@ -121,7 +76,7 @@ def main():
         param_dist=param_dist,
         pipeline=pipeline,
         scoring="f1_weighted",
-        random_state=777
+        random_state=RANDOM_STATE
     )
     
     pipeline_tuned.fit(X_train, y_train)
@@ -141,8 +96,7 @@ def main():
 
     print("-" * 20)
 
-    for metric, value in evaluation_metrics.items():
-        print(f"{metric}: {value}")
+    show_results(results=evaluation_metrics)
 
     save_evaluation_metrics(
         file_to_csv="models_metrics.csv", 
