@@ -14,7 +14,49 @@ from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB
 
 
 def main():
-    pass
+    df_pipeline, X, y = prepare_data(file_path="seattle_weather_prepared.csv")
+    num_features, cat_features = extract_features(df=df_pipeline)
+    X_train, X_test, y_train, y_test = split_data(X=X, y=y)
+
+    model = BernoulliNB(
+        alpha=1.0, 
+        force_alpha=True, 
+        binarize=0.0, 
+        fit_prior=True, 
+        class_prior=None
+    )
+
+    pipeline = create_pipeline(
+        model=model,
+        num_features=num_features,
+        cat_features=cat_features,
+        scaler=StandardScaler(),
+        encoder=OneHotEncoder()
+    )
+
+    pipeline.fit(X_train, y_train)
+
+    evaluation_metrics = evaluate_classification(
+        model=pipeline,
+        X_test=X_test,
+        y_test=y_test,
+        average="weighted",
+        include_cm=False,
+        include_roc_auc=False,
+        return_dict=True,
+        verbose=True
+    )
+
+    show_results(results=evaluation_metrics)
+
+    save_evaluation_metrics(
+        file_to_csv="models_metrics.csv", 
+        model_name="bernoulli_nb_classifier",
+        results=evaluation_metrics
+    )
+
+    
+
 
 
 if __name__ == "__main__":
