@@ -28,16 +28,25 @@ def calculate_iqr(df: pd.DataFrame, column_name: str) -> pd.Series:
     return IQR, lower_bound, upper_bound
 
 
-def find_outliers_via_forest(df: pd.DataFrame, numerical_cols: list, to_scale: bool) -> pd.Series:
+def find_outliers_via_forest(
+        df: pd.DataFrame, 
+        numerical_cols: list,
+        contamination: float, 
+        to_scale: bool,
+    ) -> pd.DataFrame:
     X = df.loc[:, numerical_cols]
     
     if to_scale:
         scaler = StandardScaler()
-        X = scaler.fit_transform(X)
+        X = pd.DataFrame(
+            scaler.fit_transform(X),
+            columns=numerical_cols,
+            index=df.index
+        )
 
 
     model = IsolationForest(
-        contamination="auto",
+        contamination=contamination,
         random_state=RANDOM_STATE,
         n_estimators=200,     
         max_samples="auto"
@@ -45,9 +54,12 @@ def find_outliers_via_forest(df: pd.DataFrame, numerical_cols: list, to_scale: b
 
     model.fit(X)
 
-    scores = model.decision_function(X)
-    labels = model.predict(X)  # -1 = anomaly, 1 = normal
+    scores = model.decision_function(X)  # continuous
+    labels = model.predict(X)            # -1 = anomaly, 1 = normal
 
-    return labels
+    return pd.DataFrame({
+        "anomaly": labels,
+        "score": scores
+    }, index=df.index)
 
 
