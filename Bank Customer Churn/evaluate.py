@@ -74,8 +74,9 @@ def evaluate_classification(
 
     return results if return_dict else None
 
-def show_results(results: Dict) -> None:
+def show_results(results: Dict, to_round: bool, decimals: int) -> None:
     for metric, value in results.items():
+        value = np.round(value, decimals=decimals) if to_round and decimals > 0 else value
         print(f"{metric}: {value}")
 
 def save_evaluation_metrics(file_to_csv: str, model_name: str, results: dict) -> None:
