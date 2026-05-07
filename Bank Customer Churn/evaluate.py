@@ -12,8 +12,11 @@ from sklearn.metrics import (
     f1_score,
     roc_auc_score,
     classification_report,
-    confusion_matrix
+    confusion_matrix,
+    ConfusionMatrixDisplay
 )
+
+import matplotlib.pyplot as plt
 
 
 def evaluate_classification(
@@ -74,10 +77,12 @@ def evaluate_classification(
 
     return results if return_dict else None
 
+
 def show_results(results: Dict, to_round: bool, decimals: int) -> None:
     for metric, value in results.items():
         value = np.round(value, decimals=decimals) if to_round and decimals > 0 else value
         print(f"{metric}: {value}")
+
 
 def save_evaluation_metrics(file_to_csv: str, model_name: str, results: dict) -> None:
     file_exists = os.path.exists(file_to_csv)
@@ -89,3 +94,60 @@ def save_evaluation_metrics(file_to_csv: str, model_name: str, results: dict) ->
             writer.writerow(["model_name"] + list(results.keys()))
 
         writer.writerow([model_name] + list(results.values()))
+
+
+def plot_confusion_matrix(
+        y_true,
+        y_pred,
+        plot_title: str,
+        labels=None,
+        cmap="Blues",
+        figsize=(6, 6)
+) -> None:
+    
+    cm = confusion_matrix(
+            y_true=y_true,
+            y_pred=y_pred,
+            labels=labels
+        )
+
+    fig, ax = plt.subplots(figsize=figsize)
+
+    display = ConfusionMatrixDisplay(
+        confusion_matrix=cm,
+        display_labels=labels
+    )
+
+    display.plot(
+        cmap=cmap,
+        ax=ax,
+        colorbar=True,
+        values_format="d"
+    )
+
+    plt.title(
+        plot_title,
+        fontsize=18,
+        fontweight="bold",
+        pad=20
+    )
+
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+
+    plt.xlabel(
+        "Predicted Label",
+        fontsize=14,
+        fontweight="bold"
+    )
+
+    plt.ylabel(
+        "True Label",
+        fontsize=14,
+        fontweight="bold"
+    )
+
+    plt.grid(False)
+
+    plt.tight_layout()
+    plt.show()
