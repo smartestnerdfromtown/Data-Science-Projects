@@ -121,7 +121,7 @@ def plot_confusion_matrix(
     display.plot(
         cmap=cmap,
         ax=ax,
-        colorbar=True,
+        colorbar=False,
         values_format="d"
     )
 
