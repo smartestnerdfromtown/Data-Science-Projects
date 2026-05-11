@@ -17,6 +17,7 @@ from sklearn.metrics import (
 )
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def evaluate_classification(
@@ -97,12 +98,12 @@ def save_evaluation_metrics(file_to_csv: str, model_name: str, results: dict) ->
 
 
 def plot_confusion_matrix(
-        y_true,
-        y_pred,
-        plot_title: str,
-        labels=None,
-        cmap="Blues",
-        figsize=(6, 6)
+    y_true,
+    y_pred,
+    plot_title: str,
+    labels=None,
+    cmap="Blues",
+    figsize=(6, 6)
 ) -> None:
     
     cm = confusion_matrix(
@@ -150,4 +151,28 @@ def plot_confusion_matrix(
     plt.grid(False)
 
     plt.tight_layout()
+    plt.show()
+
+def plot_correlation(
+    df: pd.DataFrame, 
+    method: str = "pearson", 
+    cmap: str = "coolwarm"
+) -> None:
+    
+    corr = df.corr(
+        method="pearson",
+        min_periods=1,
+        numeric_only=False
+    )
+
+    plt.figure(figsize=(10,8))
+
+    sns.heatmap(
+        corr,
+        annot=True,
+        fmt=".2f",
+        cmap="coolwarm",
+        square=True
+    )
+
     plt.show()
