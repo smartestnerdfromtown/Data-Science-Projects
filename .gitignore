@@ -2,6 +2,7 @@
 .DS_Store
 catboost_info/
 qr_codes/
+roadmap*
 
 
 # Byte-compiled / optimized / DLL files
